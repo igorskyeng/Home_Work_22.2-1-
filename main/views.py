@@ -47,7 +47,7 @@ class ProductCreateView(CreateView, LoginRequiredMixin):
         return super().form_valid(form)
 
 
-class ProductListView(ListView):
+class ProductListView(ListView, LoginRequiredMixin):
     model = Product
 
     def get_context_data(self,*args, **kwargs):
@@ -67,11 +67,22 @@ class ProductListView(ListView):
         return context_data
 
 
-class ProductDetailtView(DetailView):
+class ProductDetailtView(DetailView, LoginRequiredMixin):
     model = Product
 
+    def form_valid(self, form):
+        product = form.save()
+        product.creator = self.request.user
+        product.save()
 
-class ProductUpdateView(UpdateView):
+        if formset.is_valid():
+            formset.instance = product
+            formset.save()
+
+        return super().form_valid(form)
+
+
+class ProductUpdateView(UpdateView, LoginRequiredMixin):
     model = Product
     form_class = ProductForm
 
@@ -87,11 +98,15 @@ class ProductUpdateView(UpdateView):
         return context_data
 
     def form_valid(self, form):
+        product = form.save()
+        product.creator = self.request.user
+        product.save()
+
         formset = self.get_context_data()['formset']
         self.object = form.save()
 
         if formset.is_valid():
-            formset.instance = self.object
+            formset.instance = product
             formset.save()
 
         if form.is_valid():
@@ -105,9 +120,20 @@ class ProductUpdateView(UpdateView):
         return reverse('main:view_product', args=[self.kwargs.get('pk')])
 
 
-class ProductDeleteView(DeleteView):
+class ProductDeleteView(DeleteView, LoginRequiredMixin):
     model = Product
     success_url = reverse_lazy('main:index')
+
+    def form_valid(self, form):
+        product = form.save()
+        product.creator = self.request.user
+        product.save()
+
+        if formset.is_valid():
+            formset.instance = product
+            formset.save()
+
+        return super().form_valid(form)
 
 
 def contacts(request):
